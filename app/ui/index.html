@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auro — Multi-Agent Orchestration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f8f7;
+      --bg-tertiary: #f3f3f1;
+      --text-primary: #1a1a1a;
+      --text-secondary: #555550;
+      --text-tertiary: #999994;
+      --border: rgba(0,0,0,0.1);
+      --border-md: rgba(0,0,0,0.15);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font-sans: 'Syne', system-ui, sans-serif;
+      --font-mono: 'DM Mono', 'Fira Mono', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1c1c1e;
+        --bg-secondary: #2c2c2e;
+        --bg-tertiary: #141414;
+        --text-primary: #f5f5f3;
+        --text-secondary: #a0a09a;
+        --text-tertiary: #666660;
+        --border: rgba(255,255,255,0.08);
+        --border-md: rgba(255,255,255,0.14);
+      }
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-sans);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .auro-root {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--bg-primary);
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .menu-btn {
+      display: none;
+      width: 30px;
+      height: 30px;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: #1a1a2e;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg { width: 16px; height: 16px; }
+
+    .logo-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .logo-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.5px;
+      margin-top: 1px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 0.5px solid #a7f3d0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .status-pill {
+        background: #052e16;
+        border-color: #166534;
+        color: #4ade80;
+      }
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr 260px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--bg-primary);
+      border-right: 0.5px solid var(--border);
+      padding: 16px 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section { margin-bottom: 24px; }
+
+    .sidebar-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      padding: 0 16px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .nav-item.active {
+      color: #4f46e5;
+      border-left: 2px solid #4f46e5;
+      background: #eef2ff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .nav-item.active {
+        background: #1e1b4b;
+        color: #818cf8;
+      }
+    }
+
+    .nav-icon { width: 14px; height: 14px; opacity: 0.7; flex-shrink: 0; }
+
+    .agent-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 12px;
+    }
+
+    .agent-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .agent-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .agent-role { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+    .agent-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    .main-content {
+      padding: 20px 24px;
+      overflow-y: auto;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .metric-delta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #10b981;
+      margin-top: 4px;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+    }
+
+    .task-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .task-name { flex: 1; font-weight: 500; color: var(--text-primary); }
+    .task-agent { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+
+    .task-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .workflow-block {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .workflow-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    .workflow-steps {
+      display: flex;
+      align-items: center;
+    }
+
+    .wf-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .wf-node {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0.5px solid var(--border);
+    }
+
+    .wf-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-tertiary);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .wf-arrow {
+      width: 24px;
+      height: 1px;
+      background: var(--border-md);
+      position: relative;
+      top: -12px;
+      flex-shrink: 0;
+    }
+
+    .cta-btn {
+      background: #1a1a2e;
+      color: #e0e7ff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 9px 16px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 0.3px;
+      transition: opacity 0.15s;
+    }
+
+    .cta-btn:hover { opacity: 0.85; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: min(860px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 14px;
+      border: 0.5px solid var(--border);
+      background: var(--bg-primary);
+      padding: 16px;
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .modal-close {
+      border: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+    }
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+    .agent-card {
+      border: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .agent-card h4 { font-size: 13px; margin-bottom: 3px; }
+    .agent-card p {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .right-panel {
+      background: var(--bg-primary);
+      border-left: 0.5px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .panel-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .log-stream { display: flex; flex-direction: column; gap: 6px; }
+
+    .log-entry { display: flex; gap: 8px; align-items: flex-start; }
+
+    .log-time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      padding-top: 1px;
+    }
+
+    .log-msg {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .log-msg span { color: #6366f1; }
+
+    .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .tool-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: var(--radius-md);
+      border: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .tool-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+    .mem-bar-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+    .mem-row { display: flex; align-items: center; gap: 8px; }
+
+    .mem-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-tertiary);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .mem-bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .mem-bar-fill { height: 100%; border-radius: 4px; }
+
+    .mem-pct {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .divider { border: none; border-top: 0.5px solid var(--border); }
+
+    @media (max-width: 900px) {
+      .main-layout { grid-template-columns: 1fr; }
+      .menu-btn { display: inline-flex; }
+      .sidebar {
+        display: block;
+        position: fixed;
+        left: 0;
+        top: 57px;
+        bottom: 0;
+        width: 240px;
+        z-index: 20;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .right-panel { display: none; }
+      .main-content { padding: 14px; }
+      .metrics-row { grid-template-columns: 1fr; }
+      .workflow-steps { overflow-x: auto; gap: 8px; }
+      .wf-arrow { display: none; }
+      .agent-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="auro-root">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8" cy="8" r="3" fill="#818cf8"/>
+            <circle cx="3" cy="4" r="1.5" fill="#6366f1" opacity="0.7"/>
+            <circle cx="13" cy="4" r="1.5" fill="#6366f1" opacity="0.7"/>
+            <circle cx="3" cy="12" r="1.5" fill="#6366f1" opacity="0.7"/>
+            <circle cx="13" cy="12" r="1.5" fill="#6366f1" opacity="0.7"/>
+            <line x1="5" y1="6.5" x2="3" y2="4" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+            <line x1="11" y1="6.5" x2="13" y2="4" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+            <line x1="5" y1="9.5" x2="3" y2="12" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+            <line x1="11" y1="9.5" x2="13" y2="12" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-name">Auro</div>
+          <div class="logo-tag">multi-agent orchestration</div>
+        </div>
+      </div>
+    </div>
+    <div class="status-pill" id="topStatus">
+      <div class="status-dot"></div>
+      <span id="topStatusText">loading...</span>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Navigation</div>
+        <div class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor"/><rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"/></svg>
+          Overview
+        </div>
+        <div class="nav-item" onclick="setActive(this)">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="2.5" fill="currentColor" opacity="0.5"/><line x1="7" y1="1.5" x2="7" y2="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="9.5" x2="7" y2="12.5" stroke="currentColor" stroke-width="1.2"/></svg>
+          Agents
+        </div>
+        <div class="nav-item" onclick="setActive(this)">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 7h6M4 9.5h3" stroke="currentColor" stroke-width="1"/><rect x="4" y="1" width="6" height="2.5" rx="1" fill="currentColor" opacity="0.4"/></svg>
+          Tasks
+        </div>
+        <div class="nav-item" onclick="setActive(this)">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><path d="M2 10 L5 4 L8 8 L10 6 L13 10" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+          Workflows
+        </div>
+        <div class="nav-item" onclick="setActive(this)">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="5" rx="5" ry="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 5v4c0 1.38 2.24 2.5 5 2.5S12 10.38 12 9V5" stroke="currentColor" stroke-width="1.2"/></svg>
+          Memory
+        </div>
+        <div class="nav-item" onclick="setActive(this)">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+          Tools
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Active Agents</div>
+        <div class="agent-chips">
+          <div class="agent-chip">
+            <div><div class="agent-name">Orion</div><div class="agent-role">task-router</div></div>
+            <div class="agent-dot" style="background:#10b981;"></div>
+          </div>
+          <div class="agent-chip">
+            <div><div class="agent-name">Lyra</div><div class="agent-role">scheduler</div></div>
+            <div class="agent-dot" style="background:#10b981;"></div>
+          </div>
+          <div class="agent-chip">
+            <div><div class="agent-name">Ceres</div><div class="agent-role">note-taker</div></div>
+            <div class="agent-dot" style="background:#10b981;"></div>
+          </div>
+          <div class="agent-chip">
+            <div><div class="agent-name">Draco</div><div class="agent-role">executor</div></div>
+            <div class="agent-dot" style="background:#f59e0b;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="section-header">
+        <div>
+          <div class="section-title">System Overview</div>
+          <div class="section-sub" id="overviewSub">Last sync: -- · fetching...</div>
+        </div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">tasks dispatched</div>
+          <div class="metric-value" id="m-tasks">1,284</div>
+          <div class="metric-delta">+42 today</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">workflows complete</div>
+          <div class="metric-value" id="m-workflows">97</div>
+          <div class="metric-delta" style="color:#10b981;">+8 this hour</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">tool calls / min</div>
+          <div class="metric-value" id="m-tools">38</div>
+          <div class="metric-delta" style="color:#6366f1;">peak: 62</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Active tasks</div>
+        <div class="section-sub" id="activeSummary">-- running · -- queued</div>
+      </div>
+
+      <div class="task-list" id="taskList">
+        <div class="task-row">
+          <div class="task-status" style="background:#10b981;"></div>
+          <div class="task-name">Summarize weekly standup notes</div>
+          <div class="task-agent">ceres</div>
+          <div class="task-badge" style="background:#ecfdf5;color:#059669;border:0.5px solid #a7f3d0;">running</div>
+        </div>
+        <div class="task-row">
+          <div class="task-status" style="background:#6366f1;"></div>
+          <div class="task-name">Schedule 3 follow-up meetings</div>
+          <div class="task-agent">lyra</div>
+          <div class="task-badge" style="background:#eef2ff;color:#4338ca;border:0.5px solid #c7d2fe;">queued</div>
+        </div>
+        <div class="task-row">
+          <div class="task-status" style="background:#f59e0b;"></div>
+          <div class="task-name">Execute data pipeline — raw → staging</div>
+          <div class="task-agent">draco</div>
+          <div class="task-badge" style="background:#fffbeb;color:#b45309;border:0.5px solid #fde68a;">pending</div>
+        </div>
+        <div class="task-row">
+          <div class="task-status" style="background:#10b981;"></div>
+          <div class="task-name">Route inbound ticket #0047</div>
+          <div class="task-agent">orion</div>
+          <div class="task-badge" style="background:#ecfdf5;color:#059669;border:0.5px solid #a7f3d0;">running</div>
+        </div>
+      </div>
+
+      <div class="workflow-block">
+        <div class="workflow-title">Workflow — "Inbound Request Handler"</div>
+        <div class="workflow-steps">
+          <div class="wf-step">
+            <div class="wf-node" style="background:#eef2ff;border-color:#c7d2fe;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="12" height="8" rx="1.5" stroke="#6366f1" stroke-width="1.2"/><path d="M5 5V4a3 3 0 016 0v1" stroke="#6366f1" stroke-width="1.2"/></svg>
+            </div>
+            <div class="wf-label">API<br/>intake</div>
+          </div>
+          <div class="wf-arrow"></div>
+          <div class="wf-step">
+            <div class="wf-node" style="background:#fdf4ff;border-color:#e9d5ff;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#9333ea" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="#9333ea" opacity="0.5"/></svg>
+            </div>
+            <div class="wf-label">Orion<br/>routes</div>
+          </div>
+          <div class="wf-arrow"></div>
+          <div class="wf-step">
+            <div class="wf-node" style="background:#f0fdf4;border-color:#bbf7d0;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8 3v10" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="wf-label">tool<br/>call</div>
+          </div>
+          <div class="wf-arrow"></div>
+          <div class="wf-step">
+            <div class="wf-node" style="background:#fffbeb;border-color:#fde68a;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="6" rx="4.5" ry="2" stroke="#d97706" stroke-width="1.2"/><path d="M3.5 6v4c0 1.1 2.02 2 4.5 2s4.5-.9 4.5-2V6" stroke="#d97706" stroke-width="1.2"/></svg>
+            </div>
+            <div class="wf-label">persist<br/>PG</div>
+          </div>
+          <div class="wf-arrow"></div>
+          <div class="wf-step">
+            <div class="wf-node" style="background:#ecfdf5;border-color:#a7f3d0;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="wf-label">respond<br/>done</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="cta-btn" onclick="openArchitecture()">Explore architecture ↗</button>
+    </div>
+
+    <div class="right-panel">
+      <div>
+        <div class="panel-section-title">Live log</div>
+        <div class="log-stream" id="log-stream">
+          <div class="log-entry">
+            <div class="log-time">09:41:02</div>
+            <div class="log-msg"><span>orion</span> → dispatched ticket #0047 to lyra</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-time">09:40:58</div>
+            <div class="log-msg"><span>ceres</span> → tool call: read_notes(#standup)</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-time">09:40:51</div>
+            <div class="log-msg"><span>draco</span> → pipeline step 3/6 complete</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-time">09:40:44</div>
+            <div class="log-msg"><span>lyra</span> → pg.write(events, 3 rows)</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-time">09:40:39</div>
+            <div class="log-msg"><span>orion</span> → MCP: calendar.create event</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-time">09:40:31</div>
+            <div class="log-msg"><span>draco</span> → workflow "inbound" started</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider"/>
+
+      <div>
+        <div class="panel-section-title">Tool registry</div>
+        <div class="tool-grid" id="toolGrid">
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>calendar</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>notes</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>pg_write</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>pg_read</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>mcp_exec</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>email</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>scheduler</div>
+          <div class="tool-chip"><div class="tool-dot" style="background:#f59e0b;"></div>webhook</div>
+        </div>
+      </div>
+
+      <hr class="divider"/>
+
+      <div>
+        <div class="panel-section-title">Memory / storage</div>
+        <div class="mem-bar-wrap" id="memWrap">
+          <div class="mem-row">
+            <div class="mem-label">tasks</div>
+            <div class="mem-bar-track"><div class="mem-bar-fill" style="width:72%;background:#6366f1;"></div></div>
+            <div class="mem-pct">72%</div>
+          </div>
+          <div class="mem-row">
+            <div class="mem-label">notes</div>
+            <div class="mem-bar-track"><div class="mem-bar-fill" style="width:41%;background:#10b981;"></div></div>
+            <div class="mem-pct">41%</div>
+          </div>
+          <div class="mem-row">
+            <div class="mem-label">events</div>
+            <div class="mem-bar-track"><div class="mem-bar-fill" style="width:58%;background:#f59e0b;"></div></div>
+            <div class="mem-pct">58%</div>
+          </div>
+          <div class="mem-row">
+            <div class="mem-label">logs</div>
+            <div class="mem-bar-track"><div class="mem-bar-fill" style="width:89%;background:#e24b4a;"></div></div>
+            <div class="mem-pct">89%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="archModal" class="modal-backdrop" onclick="closeArchitecture(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Auro Architecture</div>
+        <div class="section-sub">Agent map + orchestration path</div>
+      </div>
+      <button class="modal-close" onclick="closeArchitecture(event)" aria-label="Close">✕</button>
+    </div>
+    <div class="workflow-block" style="margin-bottom:12px;">
+      <div class="workflow-title">Workflow path</div>
+      <div class="section-sub">API intake → Orion routes → MCP tools → PostgreSQL persist → response</div>
+    </div>
+    <div class="panel-section-title">Named agents</div>
+    <div class="agent-grid">
+      <div class="agent-card"><h4>Orion</h4><p>primary task-router / orchestrator</p></div>
+      <div class="agent-card"><h4>Lyra</h4><p>scheduler and calendar specialist</p></div>
+      <div class="agent-card"><h4>Ceres</h4><p>notes + memory specialist</p></div>
+      <div class="agent-card"><h4>Draco</h4><p>workflow executor / pipeline runner</p></div>
+      <div class="agent-card"><h4>Atlas</h4><p>design agent (web-builder design pass)</p></div>
+      <div class="agent-card"><h4>Nova</h4><p>frontend agent (component/page generation)</p></div>
+      <div class="agent-card"><h4>Forge</h4><p>backend agent (API/data contracts)</p></div>
+      <div class="agent-card"><h4>Sentinel</h4><p>quality agent (a11y/perf consistency)</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    const sidebar = document.querySelector('.sidebar');
+    if (window.innerWidth <= 900 && sidebar.classList.contains('open')) {
+      sidebar.classList.remove('open');
+    }
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('open');
+  }
+  function openArchitecture() {
+    document.getElementById('archModal').classList.add('open');
+  }
+  function closeArchitecture(event) {
+    if (!event || event.target.id === 'archModal' || event.target.classList.contains('modal-close')) {
+      document.getElementById('archModal').classList.remove('open');
+    }
+  }
+
+  function taskBadge(status) {
+    if (status === 'in_progress' || status === 'running') {
+      return { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0', label: 'running', dot: '#10b981' };
+    }
+    if (status === 'pending' || status === 'queued') {
+      return { bg: '#eef2ff', color: '#4338ca', border: '#c7d2fe', label: 'queued', dot: '#6366f1' };
+    }
+    return { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: status || 'pending', dot: '#f59e0b' };
+  }
+
+  function renderTasks(tasks) {
+    const taskList = document.getElementById('taskList');
+    if (!tasks || tasks.length === 0) {
+      taskList.innerHTML = '<div class="task-row"><div class="task-name">No tasks yet</div></div>';
+      return;
+    }
+    taskList.innerHTML = tasks.map((t) => {
+      const b = taskBadge(t.status);
+      return '<div class="task-row">' +
+        '<div class="task-status" style="background:' + b.dot + ';"></div>' +
+        '<div class="task-name">' + t.title + '</div>' +
+        '<div class="task-agent">' + t.agent + '</div>' +
+        '<div class="task-badge" style="background:' + b.bg + ';color:' + b.color + ';border:0.5px solid ' + b.border + ';">' + b.label + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderLogs(logs) {
+    const stream = document.getElementById('log-stream');
+    if (!logs || logs.length === 0) {
+      stream.innerHTML = '<div class="log-entry"><div class="log-time">--:--:--</div><div class="log-msg">No logs yet</div></div>';
+      return;
+    }
+    stream.innerHTML = logs.map((l) =>
+      '<div class="log-entry"><div class="log-time">' + l.time + '</div><div class="log-msg"><span>' + l.agent + '</span> → ' + l.message + '</div></div>'
+    ).join('');
+  }
+
+  function renderTools(tools) {
+    const grid = document.getElementById('toolGrid');
+    if (!tools || tools.length === 0) {
+      grid.innerHTML = '<div class="tool-chip"><div class="tool-dot" style="background:#f59e0b;"></div>none</div>';
+      return;
+    }
+    grid.innerHTML = tools.map((t) =>
+      '<div class="tool-chip"><div class="tool-dot" style="background:#10b981;"></div>' + t + '</div>'
+    ).join('');
+  }
+
+  function renderMemory(memory) {
+    const wrap = document.getElementById('memWrap');
+    if (!memory || memory.length === 0) {
+      return;
+    }
+    wrap.innerHTML = memory.map((m) =>
+      '<div class="mem-row">' +
+      '<div class="mem-label">' + m.label + '</div>' +
+      '<div class="mem-bar-track"><div class="mem-bar-fill" style="width:' + m.percent + '%;background:' + m.color + ';"></div></div>' +
+      '<div class="mem-pct">' + m.percent + '%</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  async function refreshDashboard() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch('/api/v1/dashboard/overview?user_id=1', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      document.getElementById('m-tasks').textContent = Number(data.tasks_dispatched || 0).toLocaleString();
+      document.getElementById('m-workflows').textContent = Number(data.workflows_complete || 0).toLocaleString();
+      document.getElementById('m-tools').textContent = String(data.tool_calls_per_min || 0);
+      document.getElementById('activeSummary').textContent = (data.running_count || 0) + ' running · ' + (data.queued_count || 0) + ' queued';
+
+      const now = new Date().toLocaleTimeString();
+      document.getElementById('overviewSub').textContent =
+        'Last sync: ' + now + ' · ' + (data.degraded ? 'DB degraded' : 'PostgreSQL connected');
+      document.getElementById('topStatusText').textContent =
+        data.degraded ? 'degraded mode' : ((data.running_count || 0) + ' agents running');
+
+      renderTasks(data.tasks);
+      renderLogs(data.logs);
+      renderTools(data.tools);
+      renderMemory(data.memory);
+    } catch (e) {
+      document.getElementById('overviewSub').textContent = 'Last sync: failed · API unavailable';
+      document.getElementById('topStatusText').textContent = 'degraded mode';
+    }
+  }
+
+  refreshDashboard();
+  setInterval(refreshDashboard, 10000);
+</script>
+</body>
+</html>

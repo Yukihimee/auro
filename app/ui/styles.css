@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  --bg: #121212;
+  --panel: #1b1c1e;
+  --panel-2: #161719;
+  --border: #2d3036;
+  --text: #f3f4f6;
+  --muted: #a1a1aa;
+  --mint: #3dd3a7;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+}
+
+.sidebar, .right {
+  background: #1a1b1d;
+  border-right: 1px solid var(--border);
+  padding: 16px 14px;
+}
+.right { border-right: none; border-left: 1px solid var(--border); }
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.brand h1 { margin: 0; font-size: 22px; }
+.brand p { margin: 0; font-size: 12px; color: var(--muted); }
+.brand-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: #21263a; color: #a5b4fc;
+}
+
+.section-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #858a93;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.top-gap { margin-top: 20px; }
+.nav { display: grid; gap: 4px; }
+.nav-item {
+  padding: 10px 10px;
+  border-radius: 8px;
+  color: #d4d4d8;
+  text-decoration: none;
+}
+.nav-item.active { background: #2a2b2f; color: #f5f5f5; }
+
+.agent-list { display: grid; gap: 8px; }
+.agent {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2);
+}
+.dot { width: 8px; height: 8px; border-radius: 999px; background: #52525b; }
+.dot.on { background: var(--mint); }
+.dot.warn { background: #f59e0b; }
+
+.main {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.topbar h2 { margin: 0 0 4px; font-size: 30px; }
+.topbar p { margin: 0; color: var(--muted); }
+.pill {
+  border: 1px solid #82e7c5;
+  color: #0f172a;
+  background: #c7f3e1;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cards { display: flex; gap: 12px; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.metric { width: 220px; }
+.metric-label { color: var(--muted); font-size: 13px; text-transform: lowercase; }
+.metric-value { font-size: 40px; font-weight: 700; line-height: 1.1; margin-top: 6px; }
+.metric-delta { color: var(--mint); font-size: 14px; margin-top: 8px; }
+
+.action-panel h3 { margin: 0 0 6px; font-size: 24px; }
+.action-panel p { margin: 0 0 12px; color: var(--muted); }
+.action-panel label { display: block; margin: 10px 0 6px; color: #e4e4e7; font-size: 13px; }
+input, textarea, select {
+  width: 100%;
+  border: 1px solid #3a3d45;
+  background: #0f1115;
+  color: #f4f4f5;
+  border-radius: 8px;
+  padding: 10px 11px;
+}
+textarea { min-height: 110px; resize: vertical; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+button {
+  margin-top: 12px;
+  border: none; border-radius: 8px;
+  background: #8b5cf6; color: #fff;
+  padding: 10px 14px; font-weight: 700;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+pre {
+  margin-top: 12px;
+  background: #0b0c0f;
+  border: 1px solid #3a3d45;
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 120px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.right .card { margin-bottom: 12px; }
+.right h3 { margin: 0 0 10px; }
+.log-list { display: grid; gap: 8px; color: #d4d4d8; font-size: 13px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tags span {
+  font-size: 12px; padding: 6px 8px; border-radius: 999px;
+  border: 1px solid #3a3d45; background: #101215;
+}
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  .right { display: none; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .cards { flex-direction: column; }
+  .metric { width: 100%; }
+  .grid2 { grid-template-columns: 1fr; }
+}

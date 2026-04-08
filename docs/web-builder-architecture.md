@@ -32,6 +32,7 @@ Add a production-grade multi-agent web generation workflow that supports:
 ## MCP tool contracts
 Added MCP tools for web-builder flow:
 - `design_tool.py` for design-spec extraction
+- `stitch_tool.py` for external design intelligence via Stitch MCP
 - `component_tool.py` for component planning
 - `deploy_tool.py` for Cloud Run packaging metadata
 
@@ -44,8 +45,10 @@ Non-secret:
 - `WEB_BUILDER_FORCE_CLOUD_FOR_DESIGN`
 - `CLOUD_LLM_BASE_URL`
 - `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
+- `STITCH_MCP_URL`
 
 Secrets (recommended):
 - `CLOUD_LLM_API_KEY`
 - `CLOUD_LLM_MODEL` (optional, if managed as secret)
+- `STITCH_MCP_API_KEY`
 - DB credentials or `DATABASE_URL`

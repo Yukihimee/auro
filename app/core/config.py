@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     cloud_llm_base_url: str | None = Field(default=None, alias="CLOUD_LLM_BASE_URL")
     cloud_llm_api_key: str | None = Field(default=None, alias="CLOUD_LLM_API_KEY")
     cloud_llm_model: str = Field(default="gpt-4.1-mini", alias="CLOUD_LLM_MODEL")
+    stitch_mcp_url: str | None = Field(default=None, alias="STITCH_MCP_URL")
+    stitch_mcp_api_key: str | None = Field(default=None, alias="STITCH_MCP_API_KEY")
     web_builder_primary_provider: str = Field(default="ollama", alias="WEB_BUILDER_PRIMARY_PROVIDER")
     web_builder_fallback_provider: str = Field(default="cloud", alias="WEB_BUILDER_FALLBACK_PROVIDER")
     web_builder_force_cloud_for_design: bool = Field(

@@ -8,7 +8,7 @@ This guide deploys `auro` to Cloud Run using:
 ## 1) Set project and region
 
 ```bash
-export GCP_PROJECT_ID="your-project-id"
+export GCP_PROJECT_ID="gen2-491819"
 export GCP_REGION="us-central1"
 export SERVICE_NAME="auro-api"
 gcloud config set project "${GCP_PROJECT_ID}"
@@ -36,8 +36,9 @@ printf '%s' "10.30.0.5" | gcloud secrets create auro-db-host --data-file=- || tr
 printf '%s' "postgres" | gcloud secrets create auro-db-name --data-file=- || true
 printf '%s' "postgres" | gcloud secrets create auro-db-user --data-file=- || true
 printf '%s' "replace-with-real-password" | gcloud secrets create auro-db-password --data-file=- || true
-printf '%s' "replace-with-cloud-provider-api-key" | gcloud secrets create auro-cloud-llm-api-key --data-file=- || true
-printf '%s' "gpt-4.1-mini" | gcloud secrets create auro-cloud-llm-model --data-file=- || true
+printf '%s' "replace-with-gemini-api-key" | gcloud secrets create auro-cloud-llm-api-key --data-file=- || true
+printf '%s' "gemini-1.5-pro" | gcloud secrets create auro-cloud-llm-model --data-file=- || true
+printf '%s' "replace-with-stitch-mcp-api-key" | gcloud secrets create auro-stitch-mcp-api-key --data-file=- || true
 ```
 
 If secret already exists, add a new version:
@@ -91,8 +92,8 @@ gcloud run deploy "${SERVICE_NAME}" \
   --image "${IMAGE_URI}" \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars "APP_NAME=auro,APP_ENV=prod,LOG_LEVEL=INFO,API_V1_PREFIX=/api/v1,OLLAMA_BASE_URL=http://localhost:11434,OLLAMA_MODEL=qwen2.5:7b,CLOUD_LLM_BASE_URL=https://api.openai.com,WEB_BUILDER_PRIMARY_PROVIDER=ollama,WEB_BUILDER_FALLBACK_PROVIDER=cloud,WEB_BUILDER_FORCE_CLOUD_FOR_DESIGN=false,REQUEST_TIMEOUT_SECONDS=30" \
-  --set-secrets "DATABASE_URL=auro-database-url:latest,CLOUD_LLM_API_KEY=auro-cloud-llm-api-key:latest,CLOUD_LLM_MODEL=auro-cloud-llm-model:latest"
+  --set-env-vars "APP_NAME=auro,APP_ENV=prod,LOG_LEVEL=INFO,API_V1_PREFIX=/api/v1,OLLAMA_BASE_URL=http://localhost:11434,OLLAMA_MODEL=qwen2.5:7b,CLOUD_LLM_BASE_URL=https://generativelanguage.googleapis.com,WEB_BUILDER_PRIMARY_PROVIDER=ollama,WEB_BUILDER_FALLBACK_PROVIDER=cloud,WEB_BUILDER_FORCE_CLOUD_FOR_DESIGN=false,STITCH_MCP_URL=https://your-stitch-mcp-endpoint.example.com,REQUEST_TIMEOUT_SECONDS=30" \
+  --set-secrets "DATABASE_URL=auro-database-url:latest,CLOUD_LLM_API_KEY=auro-cloud-llm-api-key:latest,CLOUD_LLM_MODEL=auro-cloud-llm-model:latest,STITCH_MCP_API_KEY=auro-stitch-mcp-api-key:latest"
 ```
 
 ## 7) Run database migrations
