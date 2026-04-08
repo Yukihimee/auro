@@ -24,28 +24,57 @@ class OrchestratorAgent:
         self.llm = LLMClient()
 
     async def route(self, request_text: str, payload: dict[str, Any]) -> dict[str, Any]:
-        lowered = request_text.lower()
-        if "task" in lowered or "todo" in lowered:
-            return {"selected_agent": self.task_agent.name, "result": await self.task_agent.handle(payload)}
-        if "calendar" in lowered or "schedule" in lowered or "meeting" in lowered:
-            return {
-                "selected_agent": self.schedule_agent.name,
-                "result": await self.schedule_agent.handle(payload),
-            }
-        if "note" in lowered or "summary" in lowered:
-            return {
-                "selected_agent": self.knowledge_agent.name,
-                "result": await self.knowledge_agent.handle(payload),
-            }
-
-        llm_result = await self.llm.chat(
-            "Classify this request into one of [task_agent, schedule_agent, knowledge_agent]: "
-            f"{request_text}"
-        )
-        return {
-            "selected_agent": "llm_router",
-            "result": llm_result,
+        schema = {
+            "type": "object",
+            "properties": {
+                "selected_agent": {
+                    "type": "string",
+                    "enum": [
+                        self.task_agent.name, 
+                        self.schedule_agent.name, 
+                        self.knowledge_agent.name, 
+                        self.deploy_tool.name
+                    ]
+                },
+                "reasoning": {
+                    "type": "string",
+                    "description": "Explanation for why this agent was selected."
+                }
+            },
+            "required": ["selected_agent", "reasoning"]
         }
+
+        prompt = (
+            f"You are a master orchestration agent. Route the following request to the correct sub-agent.\n"
+            f"Request: {request_text}\n"
+            f"Respond using the JSON schema provided."
+        )
+
+        try:
+            import json
+            llm_result = await self.llm.chat(
+                prompt=prompt, 
+                response_format=schema
+            )
+            # Ollama /api/generate returns the text in the "response" field
+            response_json = json.loads(llm_result.get("response", "{}"))
+            selected_agent_name = response_json.get("selected_agent")
+
+            if selected_agent_name == self.task_agent.name:
+                return {"selected_agent": selected_agent_name, "result": await self.task_agent.handle(payload)}
+            elif selected_agent_name == self.schedule_agent.name:
+                return {"selected_agent": selected_agent_name, "result": await self.schedule_agent.handle(payload)}
+            elif selected_agent_name == self.knowledge_agent.name:
+                return {"selected_agent": selected_agent_name, "result": await self.knowledge_agent.handle(payload)}
+            else:
+                return {"selected_agent": "unknown", "result": {"error": "Could not map to a standard agent."}}
+
+        except Exception as e:
+            # Fallback to basic if LLM fails
+            return {
+                "selected_agent": "error",
+                "result": {"error": str(e)},
+            }
 
     async def route_web_builder(self, request_text: str, payload: dict[str, Any]) -> dict[str, Any]:
         design_result = await self.design_agent.handle(payload)

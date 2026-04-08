@@ -9,3 +9,4 @@ httpx
 tenacity
 python-json-logger
 pytest
+mcp

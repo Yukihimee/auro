@@ -15,8 +15,19 @@ class LLMClient:
         self.timeout = settings.request_timeout_seconds
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8))
-    async def chat(self, prompt: str, model: str | None = None) -> dict[str, Any]:
+    async def chat(
+        self, 
+        prompt: str, 
+        model: str | None = None,
+        response_format: str | None = None,
+        tools: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         payload = {"model": model or self.model, "prompt": prompt, "stream": False}
+        if response_format:
+            payload["format"] = response_format
+        if tools:
+            payload["tools"] = tools
+            
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(f"{self.base_url}/api/generate", json=payload)
             response.raise_for_status()
