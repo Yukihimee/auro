@@ -1,4 +1,4 @@
-# auro
+# Auro
 
 Production-grade backend scaffold for a multi-agent AI system that coordinates tasks, schedules, and knowledge workflows.
 
